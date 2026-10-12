@@ -4,6 +4,8 @@ Un mod pour Claude Code qui montre les sous-agents de la session en visio, dans 
 l'application Claude Desktop : chacun à son bureau, avec une bulle qui dit ce qu'il fait, puis le
 début de son rapport.
 
+![Le panneau Standup : le chef et quatre sous-agents à leur bureau, chacun avec sa bulle](docs/capture.png)
+
 Adapté d'[agent-standup](https://github.com/Atoll92/agent-standup), d'Arthur, dont il reprend les
 personnages et les décors. agent-standup est un serveur local qui relit les journaux de toutes vos
 sessions et les affiche dans un navigateur ; ce mod vit dans la session elle-même : pas de serveur,
