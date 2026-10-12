@@ -25,20 +25,59 @@ pas de navigateur, rien à lancer.
 
 ## Installation
 
-Il faut Claude Code en ligne de commande, dans une version récente : les mods sont encore une
-fonction expérimentale, et une version trop ancienne refuse celui-ci. Testé avec la 2.1.296 ;
-`claude update` met la vôtre à jour.
+Cinq minutes, dans un terminal. Pas besoin de se connecter : l'installation ne fait que
+télécharger le mod depuis ce dépôt.
 
-Dans un terminal, PowerShell ou autre, sans ouvrir de session :
+### 1. Avoir la commande `claude`, à jour
+
+Le mod s'installe avec la commande `claude`. Vérifiez si vous l'avez :
+
+```
+claude --version
+```
+
+Il faut une version récente, car les mods sont encore une fonction expérimentale : le mod est testé
+avec la 2.1.295 et la 2.1.296. Si la vôtre est plus ancienne, `claude update` la met à jour.
+
+Si la commande est introuvable, installez-la avec l'installeur officiel, sans droits
+d'administrateur, puis ouvrez un nouveau terminal :
+
+- Windows, dans PowerShell : `irm https://claude.ai/install.ps1 | iex`
+- macOS ou Linux : `curl -fsSL https://claude.ai/install.sh | bash`
+
+Les autres méthodes sont dans la [documentation d'installation](https://code.claude.com/docs/en/setup).
+
+**Sous Windows, sans rien installer :** l'application de bureau embarque sa propre commande
+`claude`, toujours à la version de l'application. Dans PowerShell, retrouvez-la avec :
+
+```powershell
+$claude = (Get-ChildItem "$env:APPDATA\Claude\claude-code\*\*\claude.exe" | Sort-Object { [version]$_.Directory.Parent.Name } | Select-Object -Last 1).FullName
+```
+
+puis remplacez `claude` par `& $claude` dans les commandes qui suivent. Ce chemin n'est pas
+documenté et peut changer avec une mise à jour de l'application.
+
+### 2. Installer le mod
 
 ```
 claude plugin marketplace add Jeace/claude-desktop-subagent-standup
 claude plugin install subagent-standup@subagent-standup
 ```
 
-Le mod se charge dans les sessions ouvertes ensuite, celles de l'application de bureau comprises.
+La première commande déclare ce dépôt comme catalogue de plugins, la seconde installe le mod pour
+votre utilisateur. Pour ne l'activer que dans un projet, lancez les deux commandes depuis le
+dossier du projet, en ajoutant `--scope local` à chacune.
 
-Pour le mettre à jour :
+`claude plugin list` doit ensuite montrer `subagent-standup@subagent-standup`, activé.
+
+### 3. L'essayer
+
+Dans l'application de bureau, ouvrez une **nouvelle** session : un mod se charge au démarrage d'une
+session, pas dans celles déjà ouvertes. Demandez une tâche qui lance des sous-agents, par exemple
+« Lance deux sous-agents : l'un résume le README, l'autre liste les fichiers du projet ». Le panneau
+s'ouvre au premier d'entre eux ; `/standup` l'ouvre tout de suite.
+
+### Mettre à jour, retirer
 
 ```
 claude plugin marketplace update subagent-standup
@@ -46,6 +85,16 @@ claude plugin update subagent-standup@subagent-standup
 ```
 
 Pour le retirer : `claude plugin uninstall subagent-standup@subagent-standup`.
+
+### En cas de souci
+
+- **`claude` introuvable juste après l'installation** : ouvrez un nouveau terminal ; sinon, voir
+  [la correction du PATH](https://code.claude.com/docs/en/troubleshoot-install).
+- **Le panneau n'apparaît pas** : la session était peut-être ouverte avant l'installation, ouvrez-en
+  une nouvelle. Mettez aussi l'application de bureau à jour : c'est son moteur qui fait tourner le
+  mod.
+- **`marketplace add` refusé** : vérifiez l'orthographe du dépôt. Si votre organisation restreint
+  les catalogues de plugins, l'installation se décide avec son administrateur.
 
 ## Utilisation
 
