@@ -1,6 +1,6 @@
 {
   "name": "subagent-standup",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vos sous-agents en visio : un panneau où chacun travaille à son bureau, en direct",
   "author": { "name": "Jeace", "url": "https://github.com/Jeace" },
   "homepage": "https://github.com/Jeace/claude-desktop-subagent-standup",

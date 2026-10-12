@@ -31,6 +31,19 @@ const newMember = (id: string, name: string, role: string, status: MemberStatus)
 const lead = atom({ plugin: 'subagent-standup', key: 'lead' } as const, newMember(LEAD, 'Claude', 'Chef', 'idle'))
 const crew = atom({ plugin: 'subagent-standup', key: 'crew' } as const, [])
 const isDismissed = atom({ plugin: 'subagent-standup', key: 'isDismissed' } as const, false)
+const lastRefusal = atom({ plugin: 'subagent-standup', key: 'lastRefusal' } as const, '')
+const isHintShown = atom({ plugin: 'subagent-standup', key: 'isHintShown' } as const, false)
+
+// ouvert sans demande, le panneau peut rester caché (fenêtre étroite) : on le signale une fois par session
+const openUnasked = async ($: EngineInterface): Promise<void> => {
+  const opened = await $.ui.open({ id: PANE, title: TITLE })
+  if (opened.isPlaced) return
+
+  await update($, lastRefusal, () => opened.reason)
+  if (await read($, isHintShown)) return
+  await update($, isHintShown, () => true)
+  $.ui.toast('Standup : vos sous-agents sont au travail, /standup pour les voir')
+}
 
 // sans agentId c'est la boucle principale ; un id inconnu (fork du moteur, compaction) ne change rien
 const touch = async ($: EngineInterface, agentId: string | undefined, change: (member: Member) => Member): Promise<void> => {
@@ -70,8 +83,11 @@ export const register: Register = on => {
   on('command.run', { command: 'standup' }, async $ => {
     await update($, isDismissed, () => false)
     await $.ui.open({ id: PANE, title: TITLE })
+    // la raison donnée par l'appli quand le panneau n'est pas venu seul
+    const refusal = await read($, lastRefusal)
+    await update($, lastRefusal, () => '')
 
-    return { text: 'Le standup est ouvert.' }
+    return { text: refusal ? `Le standup est ouvert. L'appli l'avait gardé caché : ${refusal}` : 'Le standup est ouvert.' }
   })
 
   // fermé à la main : il ne se rouvre plus tout seul, jusqu'au prochain /standup
@@ -98,7 +114,7 @@ export const register: Register = on => {
       ...list,
       { ...newMember(agentId, pickName(agentId, new Set(list.map(member => member.name))), e.description, 'working'), activity: 'Je lis mes consignes' },
     ])
-    if (!(await read($, isDismissed))) void $.ui.open({ id: PANE, title: TITLE })
+    if (!(await read($, isDismissed))) await openUnasked($)
 
     return started
   })

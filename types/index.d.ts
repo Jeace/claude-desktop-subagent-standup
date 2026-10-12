@@ -19,6 +19,9 @@ declare module 'claude-code' {
       lead: Member
       crew: Member[]
       isDismissed: boolean
+      // pourquoi l'appli a gardé caché le dernier panneau ouvert sans demande, vide sinon
+      lastRefusal: string
+      isHintShown: boolean
     }
   }
 }

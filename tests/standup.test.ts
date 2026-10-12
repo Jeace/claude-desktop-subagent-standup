@@ -28,9 +28,12 @@ const answerOf = (agentId: string, answer: string, reason: 'answer' | 'aborted' 
   agentId, answer, reason, durationMs: 1000, isAborted: reason === 'aborted', turnId: `turn-${agentId}`,
 })
 
-// le moteur sous le plugin : chaque sous-agent lancé reçoit agent-1, agent-2… et chaque ouverture de panneau est comptée
-const engine = (on: On) => {
+const NARROW = 'ouvert sans demande sous 144 colonnes, 120 maintenant'
+
+// le moteur sous le plugin : chaque sous-agent lancé reçoit agent-1, agent-2… ; ouvertures et notifications sont relevées
+const engine = (on: On, { isPlaced = true } = {}) => {
   const opened: string[] = []
+  const toasts: string[] = []
   let spawned = 0
   on('agent.spawn', () => ({ model: 'test-model', agentId: `agent-${++spawned}` }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
@@ -38,11 +41,18 @@ const engine = (on: On) => {
   on('ui.open', ($, e) => {
     opened.push(e.id)
 
-    return { value: { isPlaced: true } }
+    return { value: isPlaced ? { isPlaced: true } : { isPlaced: false, reason: NARROW } }
+  })
+  on('ui.toast', ($, e) => {
+    toasts.push(e.text)
+
+    return { value: undefined }
   })
 
-  return { opened, clock: mock.clock(on, { now: 1_000_000 }) }
+  return { opened, toasts, clock: mock.clock(on, { now: 1_000_000 }) }
 }
+
+const COMMAND = { command: 'standup', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } } as const
 
 // les répliques se lisent dans le texte alternatif des images : la bulle est dessinée dans le SVG
 const altsOf = async (ui: { findAll: (query: { type: string }) => Promise<{ props: Record<string, unknown> }[]> }): Promise<string> =>
@@ -100,10 +110,23 @@ describe('le panneau', () => {
   })
 
   test('/standup ouvre le panneau', async ($, on) => {
-    const { opened } = engine(on)
-    const ran = await $.command.run({ command: 'standup', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } })
+    const { opened, toasts } = engine(on)
+    const ran = await $.command.run(COMMAND)
     expect(ran.text).toBe('Le standup est ouvert.')
     expect(opened).toEqual(['standup'])
+    expect(toasts).toEqual([])
+  })
+
+  test('gardé caché par l’appli : une seule notification, et /standup en donne la raison', async ($, on) => {
+    const { opened, toasts } = engine(on, { isPlaced: false })
+    await $.agent.spawn(spawnOf('Première mission'))
+    await $.agent.spawn(spawnOf('Deuxième mission'))
+    expect(opened).toEqual(['standup', 'standup'])
+    expect(toasts).toEqual(['Standup : vos sous-agents sont au travail, /standup pour les voir'])
+
+    expect((await $.command.run(COMMAND)).text).toBe(`Le standup est ouvert. L'appli l'avait gardé caché : ${NARROW}`)
+    // la raison n'est donnée qu'une fois
+    expect((await $.command.run(COMMAND)).text).toBe('Le standup est ouvert.')
   })
 
   test('un agent fini quitte l’appel au premier tour après deux minutes', async ($, on) => {

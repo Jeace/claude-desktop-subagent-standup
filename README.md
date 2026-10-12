@@ -90,16 +90,18 @@ Pour le retirer : `claude plugin uninstall subagent-standup@subagent-standup`.
 
 - **`claude` introuvable juste après l'installation** : ouvrez un nouveau terminal ; sinon, voir
   [la correction du PATH](https://code.claude.com/docs/en/troubleshoot-install).
-- **Le panneau n'apparaît pas** : la session était peut-être ouverte avant l'installation, ouvrez-en
-  une nouvelle. Mettez aussi l'application de bureau à jour : c'est son moteur qui fait tourner le
-  mod.
+- **Le panneau ne s'ouvre pas tout seul** : la fenêtre est sans doute trop étroite, l'application
+  garde alors le panneau caché. Tapez `/standup` : sa réponse dit pourquoi il n'était pas venu.
+- **`/standup` est inconnu** : la session était ouverte avant l'installation, ouvrez-en une
+  nouvelle. Mettez aussi l'application de bureau à jour : c'est son moteur qui fait tourner le mod.
 - **`marketplace add` refusé** : vérifiez l'orthographe du dépôt. Si votre organisation restreint
   les catalogues de plugins, l'installation se décide avec son administrateur.
 
 ## Utilisation
 
-- Le panneau s'ouvre tout seul au premier sous-agent lancé.
-- `/standup` l'ouvre à la demande.
+- Le panneau s'ouvre tout seul au premier sous-agent lancé, si la fenêtre est assez large : en
+  dessous, l'application le garde caché, et une notification invite à taper `/standup`.
+- `/standup` l'ouvre à la demande, quelle que soit la largeur de la fenêtre.
 - Fermé à la main, il ne se rouvre plus tout seul, jusqu'au prochain `/standup`.
 
 ## Ce qu'il fait de vos données
