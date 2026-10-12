@@ -1,0 +1,12 @@
+{
+  "name": "subagent-standup",
+  "owner": { "name": "Jeace", "url": "https://github.com/Jeace" },
+  "description": "Le panneau Standup : les sous-agents de la session en visio",
+  "plugins": [
+    {
+      "name": "subagent-standup",
+      "source": "./",
+      "description": "Vos sous-agents en visio : un panneau où chacun travaille à son bureau, en direct"
+    }
+  ]
+}
