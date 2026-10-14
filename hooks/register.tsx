@@ -34,15 +34,19 @@ const isDismissed = atom({ plugin: 'subagent-standup', key: 'isDismissed' } as c
 const lastRefusal = atom({ plugin: 'subagent-standup', key: 'lastRefusal' } as const, '')
 const isHintShown = atom({ plugin: 'subagent-standup', key: 'isHintShown' } as const, false)
 
-// ouvert sans demande, le panneau peut rester caché (fenêtre étroite) : on le signale une fois par session
-const openUnasked = async ($: EngineInterface): Promise<void> => {
+// dès que Claude se met au travail, sauf fermé à la main ou déjà affiché
+const openOnWork = async ($: EngineInterface): Promise<void> => {
+  if (await read($, isDismissed)) return
+  if ((await $.ui.panes()).some(pane => pane.id === PANE && pane.isPlaced)) return
+
   const opened = await $.ui.open({ id: PANE, title: TITLE })
   if (opened.isPlaced) return
 
+  // ouvert sans demande, il peut rester caché (fenêtre étroite) : on le signale une fois par session
   await update($, lastRefusal, () => opened.reason)
   if (await read($, isHintShown)) return
   await update($, isHintShown, () => true)
-  $.ui.toast('Standup : vos sous-agents sont au travail, /standup pour les voir')
+  $.ui.toast('Standup : Claude est au travail, /standup pour le voir')
 }
 
 // sans agentId c'est la boucle principale ; un id inconnu (fork du moteur, compaction) ne change rien
@@ -97,10 +101,19 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // un message tapé l'ouvre : une ouverture demandée, affichée quelle que soit la largeur de la fenêtre
+  on('prompt.submit', async ($, e, next) => {
+    await openOnWork($)
+
+    return next(e)
+  })
+
   on('turn.start', async ($, e, next) => {
     const now = await $.clock.now()
     await update($, lead, (member): Member => ({ ...member, status: 'working', activity: 'Je réfléchis…', endedAt: null }))
     await update($, crew, list => prune(list, now))
+    // un tour lancé sans message tapé (notification, reprise) l'ouvre aussi
+    await openOnWork($)
 
     return next(e)
   })
@@ -114,7 +127,6 @@ export const register: Register = on => {
       ...list,
       { ...newMember(agentId, pickName(agentId, new Set(list.map(member => member.name))), e.description, 'working'), activity: 'Je lis mes consignes' },
     ])
-    if (!(await read($, isDismissed))) await openUnasked($)
 
     return started
   })

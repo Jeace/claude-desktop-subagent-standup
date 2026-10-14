@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'claude-code/testing'
-import type { AgentSpawnInput, On, TurnCompleteInput } from 'claude-code'
+import type { AgentSpawnInput, On, PromptSubmitInput, TurnCompleteInput } from 'claude-code'
 
 import { avatarSvg, personaFor, wrapText, type Pose } from '../hooks/cast'
 import { describeTool, gist } from '../hooks/describe'
@@ -30,19 +30,29 @@ const answerOf = (agentId: string, answer: string, reason: 'answer' | 'aborted' 
 
 const NARROW = 'ouvert sans demande sous 144 colonnes, 120 maintenant'
 
+// un message tapé dans la session
+const PROMPT: PromptSubmitInput = { text: 'Vérifie la logique de retry', wait: false, origin: { kind: 'composer' } }
+
 // le moteur sous le plugin : chaque sous-agent lancé reçoit agent-1, agent-2… ; ouvertures et notifications sont relevées
 const engine = (on: On, { isPlaced = true } = {}) => {
   const opened: string[] = []
   const toasts: string[] = []
+  // les panneaux ouverts et s'ils sont affichés, tels que $.ui.panes() les rend
+  const panes = new Map<string, boolean>()
   let spawned = 0
   on('agent.spawn', () => ({ model: 'test-model', agentId: `agent-${++spawned}` }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
+  on('prompt.submit', ($, e) => ({ text: e.text }))
   on('ui.open', ($, e) => {
     opened.push(e.id)
+    panes.set(e.id, isPlaced)
 
     return { value: isPlaced ? { isPlaced: true } : { isPlaced: false, reason: NARROW } }
   })
+  on('ui.panes', () => ({
+    value: [...panes].map(([id, isShown]) => ({ id, title: 'Standup', isShown, isFocused: false, isPlaced: isShown })),
+  }))
   on('ui.toast', ($, e) => {
     toasts.push(e.text)
 
@@ -60,9 +70,8 @@ const altsOf = async (ui: { findAll: (query: { type: string }) => Promise<{ prop
 
 describe('le panneau', () => {
   test('un sous-agent arrive, travaille, puis rend son rapport', async ($, on) => {
-    const { opened } = engine(on)
+    engine(on)
     await $.agent.spawn(spawnOf('Vérif. du retry'))
-    expect(opened).toEqual(['standup'])
 
     const desktop = await $.ui.mount({ ...PANE, surface: 'desktop' })
     expect((await desktop.findAll({ type: 'Svg' })).length).toBe(2)
@@ -103,7 +112,8 @@ describe('le panneau', () => {
     engine(on)
     on('tool.call', () => ({ result: 'ok' }) as never)
     await $.tool.call({ tool: 'Read', file_path: 'C:/projet/src/client.js' })
-    await $.tool.call({ tool: 'Grep', pattern: 'retry' })
+    // Grep manque à certaines versions du moteur, dont celle de l'appli de bureau : on force le type
+    await $.tool.call({ tool: 'Grep', pattern: 'retry' } as never)
     const desktop = await $.ui.mount({ ...PANE, surface: 'desktop' })
     expect(await desktop.find({ type: 'Text', text: /⚙ au travail · 2 outils/ })).toBeDefined()
     expect(await altsOf(desktop)).toMatch(/Claude, Chef : « Je cherche « retry » »/)
@@ -117,12 +127,33 @@ describe('le panneau', () => {
     expect(toasts).toEqual([])
   })
 
+  test('un message ouvre le panneau, sans attendre de sous-agent', async ($, on) => {
+    const { opened, toasts } = engine(on)
+    await $.prompt.submit(PROMPT)
+    expect(opened).toEqual(['standup'])
+    expect(toasts).toEqual([])
+  })
+
+  test('un tour lancé sans message l’ouvre aussi', async ($, on) => {
+    const { opened } = engine(on)
+    await $.turn.start({ text: '', turnId: 't-1' })
+    expect(opened).toEqual(['standup'])
+  })
+
+  test('déjà affiché, il n’est pas rouvert', async ($, on) => {
+    const { opened } = engine(on)
+    await $.prompt.submit(PROMPT)
+    await $.turn.start({ text: PROMPT.text, turnId: 't-1' })
+    await $.prompt.submit(PROMPT)
+    expect(opened).toEqual(['standup'])
+  })
+
   test('gardé caché par l’appli : une seule notification, et /standup en donne la raison', async ($, on) => {
     const { opened, toasts } = engine(on, { isPlaced: false })
-    await $.agent.spawn(spawnOf('Première mission'))
-    await $.agent.spawn(spawnOf('Deuxième mission'))
+    await $.turn.start({ text: '', turnId: 't-1' })
+    await $.turn.start({ text: '', turnId: 't-2' })
     expect(opened).toEqual(['standup', 'standup'])
-    expect(toasts).toEqual(['Standup : vos sous-agents sont au travail, /standup pour les voir'])
+    expect(toasts).toEqual(['Standup : Claude est au travail, /standup pour le voir'])
 
     expect((await $.command.run(COMMAND)).text).toBe(`Le standup est ouvert. L'appli l'avait gardé caché : ${NARROW}`)
     // la raison n'est donnée qu'une fois

@@ -37,7 +37,7 @@ claude --version
 ```
 
 Il faut une version récente, car les mods sont encore une fonction expérimentale : le mod est testé
-avec la 2.1.295 et la 2.1.296. Si la vôtre est plus ancienne, `claude update` la met à jour.
+de la 2.1.295 à la 2.1.299. Si la vôtre est plus ancienne, `claude update` la met à jour.
 
 Si la commande est introuvable, installez-la avec l'installeur officiel, sans droits
 d'administrateur, puis ouvrez un nouveau terminal :
@@ -73,9 +73,9 @@ dossier du projet, en ajoutant `--scope local` à chacune.
 ### 3. L'essayer
 
 Dans l'application de bureau, ouvrez une **nouvelle** session : un mod se charge au démarrage d'une
-session, pas dans celles déjà ouvertes. Demandez une tâche qui lance des sous-agents, par exemple
-« Lance deux sous-agents : l'un résume le README, l'autre liste les fichiers du projet ». Le panneau
-s'ouvre au premier d'entre eux ; `/standup` l'ouvre tout de suite.
+session, pas dans celles déjà ouvertes. Envoyez un message : le panneau s'ouvre dès que Claude se
+met au travail. Pour voir toute l'équipe, demandez une tâche qui lance des sous-agents, par exemple
+« Lance deux sous-agents : l'un résume le README, l'autre liste les fichiers du projet ».
 
 ### Mettre à jour, retirer
 
@@ -90,8 +90,9 @@ Pour le retirer : `claude plugin uninstall subagent-standup@subagent-standup`.
 
 - **`claude` introuvable juste après l'installation** : ouvrez un nouveau terminal ; sinon, voir
   [la correction du PATH](https://code.claude.com/docs/en/troubleshoot-install).
-- **Le panneau ne s'ouvre pas tout seul** : la fenêtre est sans doute trop étroite, l'application
-  garde alors le panneau caché. Tapez `/standup` : sa réponse dit pourquoi il n'était pas venu.
+- **Le panneau ne s'ouvre pas tout seul** : fermé à la main, il ne revient qu'avec `/standup`.
+  Sinon, l'application l'a gardé caché, le plus souvent faute de largeur : tapez `/standup`, sa
+  réponse dit pourquoi il n'était pas venu.
 - **`/standup` est inconnu** : la session était ouverte avant l'installation, ouvrez-en une
   nouvelle. Mettez aussi l'application de bureau à jour : c'est son moteur qui fait tourner le mod.
 - **`marketplace add` refusé** : vérifiez l'orthographe du dépôt. Si votre organisation restreint
@@ -99,10 +100,15 @@ Pour le retirer : `claude plugin uninstall subagent-standup@subagent-standup`.
 
 ## Utilisation
 
-- Le panneau s'ouvre tout seul au premier sous-agent lancé, si la fenêtre est assez large : en
+- Le panneau s'ouvre tout seul dès que Claude se met au travail, sans attendre de sous-agent : à
+  votre message, ou au début d'un tour lancé sans vous (une notification, une reprise).
+- Ouvert à votre message, il compte comme demandé : l'application l'affiche quelle que soit la
+  largeur de la fenêtre. Ouvert par un tour lancé sans vous, il faut une fenêtre assez large : en
   dessous, l'application le garde caché, et une notification invite à taper `/standup`.
 - `/standup` l'ouvre à la demande, quelle que soit la largeur de la fenêtre.
 - Fermé à la main, il ne se rouvre plus tout seul, jusqu'au prochain `/standup`.
+- C'est l'application qui décide de la largeur du panneau : tirez son bord pour la régler, jusqu'à
+  un seul personnage de large.
 
 ## Ce qu'il fait de vos données
 
